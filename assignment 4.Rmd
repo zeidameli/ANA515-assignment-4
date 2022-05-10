@@ -1,0 +1,331 @@
+---
+title: "Mall Customers"
+author: "Zeid El Ameli"
+date: "5/10/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+```
+
+## Customer Segmentation
+
+Customer segmentation is a typical strategy businesses follow to better understand how to target customers with ads and products. Using clustering techniques, companies can identify the several segments of customers allowing them to target the potential user base.
+
+Companies that deploy customer segmentation are under the notion that every customer has different preferences and require a specific marketing techniques to address them appropriately. Companies aim to gain a deeper understanding of the customer they are targeting. Therefore, their aim has to be specific and should be tailored to address the requirements of each and every individual customer. Furthermore, through the data collected, companies can gain a more detailed knowledge of the customer's preferences as well as the requirements for discovering valuable segments that would reap them maximum profit. This way, they can better aim their marketing techniques more efficiently and minimize the possibility of risk to their investment.
+
+Unfortunately, we don't know the root source of this dataset, the online source we used to obtain this dataset (Kaggle) had no description for it.
+we first need to import our dataset and scan some valuable information about the data we're working with:
+
+```{r customer data, echo=TRUE}
+customer_data <-read.csv("/Users/zeida/Documents/Mall_Customers.csv") %>%
+rename(Gender = Genre)
+str(customer_data)
+names(customer_data)
+head(customer_data)
+Average_Age <-mean(customer_data$Age)
+Average_Income <-mean(customer_data$Annual.Income..k..)
+Average_Score <-mean(customer_data$Spending.Score..1.100.)
+```
+#Exploring Our Data
+
+We can see that the dataset is made out of 200 observations (customers), and we have 5 different variables for each customer:
+ID: this is a unique identifier for our data, the data type for this field is integer
+Genre: Gender of the customer, a variable of type string, it can be either male or female.
+Age: the age of the customer, data type is integer
+Annual Income: the annual income of the customer in thousands of US$
+Spending Score: A score based on how much they spend, on a scale 1-100 (the higher the spending the higher the score)
+
+The average age of a customer at that mall is {r Average_Age}.
+The average income of a customer is {r Average_Income}.
+the average spending score is {r Average_Score}.
+
+We were lucky that our data was already clean, except for a small detail in the column names. Column 2 "Gender" was misspelled as "Genre", which was an easy fix using the rename function in Dplyr.
+This dataset looks cleaned professionally, there are no outliers or values that make no sense. I think whoever worked on this probably did the following:
+1. Eliminate rows with NULL values from any of the 5 fields
+2. identify and eliminate rows with non-sense values, such as customer of age less than 10 for example, or customers with score over 100 or less than zero
+3. Identify and eliminate rows with values that do not match the definition of the field, such as customer with gender equals 3 for example
+
+```{r exploration, echo=TRUE}
+summary(customer_data$Age)
+sd(customer_data$Age)
+summary(customer_data$Annual.Income..k..)
+sd(customer_data$Annual.Income..k..)
+summary(customer_data$Age)
+sd(customer_data$Spending.Score..1.100.)
+
+```
+
+#Visualize The Data
+
+Now, let's visualize our data to get a better undersntading of what we're working with!
+
+#Customer Gender Visualization - Boxplot
+We want to see a boxplot of the gender distribution of our dataset.
+
+```{r visuals, echo=TRUE}
+a=table(customer_data$Gender)
+barplot(a,main="Using BarPlot to display Gender Comparision",
+       ylab="Count",
+       xlab="Gender",
+       col=rainbow(2),
+       legend=rownames(a))
+
+```
+
+# Pie Chart
+Now, let's put it in a pie chart
+
+```{r piechart, echo=TRUE}
+pct=round(a/sum(a)*100)
+lbs=paste(c("Female","Male")," ",pct,"%",sep=" ")
+library(plotrix)
+pie3D(a,labels=lbs,
+   main="Pie Chart Depicting Ratio of Female and Male")
+```
+#Visualizing Age distribution
+We want to show a histogram showing the age distribution
+
+```{r historgram, echo=TRUE}
+hist(customer_data$Age,
+    col="blue",
+    main="Histogram to Show Count of Age Class",
+    xlab="Age Class",
+    ylab="Frequency",
+    labels=TRUE)
+```
+
+#Boxplot
+Now as a boxplot
+
+```{r boxplot, echo=TRUE}
+boxplot(customer_data$Age,col="red",main="Boxplot for Descriptive Analysis of Age")
+```
+
+#Analysis of Customer's Annual Income
+We want to understand the level of income we're dealing with, this is why we want to visualize the annual income in a multiple ways
+
+```{r histo, echo=TRUE}
+summary(customer_data$Annual.Income..k..)
+hist(customer_data$Annual.Income..k..,
+  main="Histogram for Annual Income",
+  xlab="Annual Income Class",
+  ylab="Frequency",
+  labels=TRUE)
+plot(density(customer_data$Annual.Income..k..),
+    col="yellow",
+    main="Density Plot for Annual Income",
+    xlab="Annual Income Class",
+    ylab="Density")
+polygon(density(customer_data$Annual.Income..k..),col="blue4")
+```
+
+#Analyzing Customer Spending
+We now want to study the spending habits of customers at the mall
+
+```{r spending, echo=TRUE}
+summary(customer_data$Spending.Score..1.100.)
+boxplot(customer_data$Spending.Score..1.100.,
+   horizontal=TRUE,
+   main="BoxPlot for Descriptive Analysis of Spending Score")
+hist(customer_data$Spending.Score..1.100.,
+    main="HistoGram for Spending Score",
+    xlab="Spending Score Class",
+    ylab="Frequency",
+    col="#6600cc",
+    labels=TRUE)
+```
+
+# K-means Algorithm
+While using the k-means clustering algorithm, the first step is to indicate the number of clusters (k) that we wish to produce in the final output. The algorithm starts by selecting k objects from dataset randomly that will serve as the initial centers for our clusters. These selected objects are the cluster means, also known as centroids. Then, the remaining objects have an assignment of the closest centroid. This centroid is defined by the Euclidean Distance present between the object and the cluster mean. We refer to this step as “cluster assignment”. When the assignment is complete, the algorithm proceeds to calculate new mean value of each cluster present in the data. After the recalculation of the centers, the observations are checked if they are closer to a different cluster. Using the updated cluster mean, the objects undergo reassignment. This goes on repeatedly through several iterations until the cluster assignments stop altering. The clusters that are present in the current iteration are the same as the ones obtained in the previous iteration.
+
+If you want to work one of the major challenges then knowledge Big Data is crucial. Therefore, I recommend to check out Hadoop for Data Science.
+
+## Summing up the K-means clustering
+
+We specify the number of clusters that we need to create.
+The algorithm selects k objects at random from the dataset. This object is the initial cluster or mean.
+The closest centroid obtains the assignment of a new observation. We base this assignment on the Euclidean Distance between object and the centroid.
+k clusters in the data points update the centroid through calculation of the new mean values present in all the data points of the cluster. The kth cluster’s centroid has a length of p that contains means of all variables for observations in the k-th cluster. We denote the number of variables with p.
+Iterative minimization of the total within the sum of squares. Then through the iterative minimization of the total sum of the square, the assignment stop wavering when we achieve maximum iteration. The default value is 10 that the R software uses for the maximum iterations.
+Determining Optimal Clusters
+While working with clusters, you need to specify the number of clusters to use. You would like to utilize the optimal number of clusters. To help you in determining the optimal clusters, there are three popular methods –
+
+<p style="font-family: times, serif; font-size:11pt; font-style:italic">Elbow method
+</p>
+<p style="font-family: times, serif; font-size:11pt; font-style:italic">Silhouette method
+</p>
+<p style="font-family: times, serif; font-size:11pt; font-style:italic">Gap statistic
+</p>
+
+### Elbow Method
+The main goal behind cluster partitioning methods like k-means is to define the clusters such that the intra-cluster variation stays minimum.
+
+***minimize(sum W(Ck)), k=1…k***
+
+Where Ck represents the kth cluster and W(Ck) denotes the intra-cluster variation. With the measurement of the total intra-cluster variation, one can evaluate the compactness of the clustering boundary. We can then proceed to define the optimal clusters as follows –
+
+First, we calculate the clustering algorithm for several values of k. This can be done by creating a variation within k from 1 to 10 clusters. We then calculate the total intra-cluster sum of square (iss). Then, we proceed to plot iss based on the number of k clusters. This plot denotes the appropriate number of clusters required in our model. In the plot, the location of a bend or a knee is the indication of the optimum number of clusters.
+
+```{r message=FALSE, echo=TRUE }
+library(purrr)
+set.seed(123)
+# function to calculate total intra-cluster sum of square 
+iss <- function(k) {
+  kmeans(customer_data[,3:5],k,iter.max=100,nstart=100,algorithm="Lloyd" )$tot.withinss
+}
+k.values <- 1:10
+iss_values <- map_dbl(k.values, iss)
+plot(k.values, iss_values,
+    type="b", pch = 19, frame = FALSE, 
+    xlab="Number of clusters K",
+    ylab="Total intra-clusters sum of squares")
+```
+
+### Average Silhouette Method
+With the help of the average silhouette method, we can measure the quality of our clustering operation. With this, we can determine how well within the cluster is the data object. If we obtain a high average silhouette width, it means that we have good clustering. The average silhouette method calculates the mean of silhouette observations for different k values. With the optimal number of k clusters, one can maximize the average silhouette over significant values for k clusters.
+
+Using the silhouette function in the cluster package, we can compute the average silhouette width using the kmean function. Here, the optimal cluster will possess highest average.
+
+```{r average silhouette, echo=TRUE}
+library(cluster) 
+library(gridExtra)
+library(grid)
+k2<-kmeans(customer_data[,3:5],2,iter.max=100,nstart=50,algorithm="Lloyd")
+s2<-plot(silhouette(k2$cluster,dist(customer_data[,3:5],"euclidean")))
+```
+
+```{r v2, echo=TRUE}
+k3<-kmeans(customer_data[,3:5],3,iter.max=100,nstart=50,algorithm="Lloyd")
+s3<-plot(silhouette(k3$cluster,dist(customer_data[,3:5],"euclidean")))
+```
+
+```{r v3, echo=TRUE}
+k4<-kmeans(customer_data[,3:5],4,iter.max=100,nstart=50,algorithm="Lloyd")
+s4<-plot(silhouette(k4$cluster,dist(customer_data[,3:5],"euclidean")))
+```
+
+```{r v4, echo=TRUE}
+k5<-kmeans(customer_data[,3:5],5,iter.max=100,nstart=50,algorithm="Lloyd")
+s5<-plot(silhouette(k5$cluster,dist(customer_data[,3:5],"euclidean")))
+```
+
+```{r v5, echo=TRUE}
+k6<-kmeans(customer_data[,3:5],6,iter.max=100,nstart=50,algorithm="Lloyd")
+s6<-plot(silhouette(k6$cluster,dist(customer_data[,3:5],"euclidean")))
+```
+
+```{r v6, echo=TRUE}
+k7<-kmeans(customer_data[,3:5],7,iter.max=100,nstart=50,algorithm="Lloyd")
+s7<-plot(silhouette(k7$cluster,dist(customer_data[,3:5],"euclidean")))
+```
+
+```{r v7, echo=TRUE}
+k8<-kmeans(customer_data[,3:5],8,iter.max=100,nstart=50,algorithm="Lloyd")
+s8<-plot(silhouette(k8$cluster,dist(customer_data[,3:5],"euclidean")))
+```
+
+```{r v8, echo=TRUE}
+k9<-kmeans(customer_data[,3:5],9,iter.max=100,nstart=50,algorithm="Lloyd")
+s9<-plot(silhouette(k9$cluster,dist(customer_data[,3:5],"euclidean")))
+```
+
+```{r v9, echo=TRUE}
+k10<-kmeans(customer_data[,3:5],10,iter.max=100,nstart=50,algorithm="Lloyd")
+s10<-plot(silhouette(k10$cluster,dist(customer_data[,3:5],"euclidean")))
+```
+
+Now, we make use of the fviz_nbclust() function to determine and visualize the optimal number of clusters
+```{r optimal, echo=TRUE}
+library(NbClust)
+library(factoextra)
+fviz_nbclust(customer_data[,3:5], kmeans, method = "silhouette")
+```
+
+### Gap Statistic Method
+In 2001, researchers at Stanford University – **R. Tibshirani, G.Walther and T. Hastie** published the Gap Statistic Method. We can use this method to any of the clustering method like K-means, hierarchical clustering etc. Using the gap statistic, one can compare the total intracluster variation for different values of k along with their expected values under the null reference distribution of data. With the help of Monte Carlo simulations, one can produce the sample dataset. For each variable in the dataset, we can calculate the range between min(xi) and max (xj) through which we can produce values uniformly from interval lower bound to upper bound.
+
+For computing the gap statistics method we can utilize the clusGap function for providing gap statistic as well as standard error for a given output.
+
+```{r gap, echo=TRUE}
+set.seed(125)
+stat_gap <- clusGap(customer_data[,3:5], FUN = kmeans, nstart = 25,
+            K.max = 10, B = 50)
+fviz_gap_stat(stat_gap)
+```
+
+Now, let us take k = 6 as our optimal cluster
+
+```{r k, echo=TRUE}
+k6<-kmeans(customer_data[,3:5],6,iter.max=100,nstart=50,algorithm="Lloyd")
+k6
+```
+
+In the output of our kmeans operation, we observe a list with several key information. From this, we conclude the useful information being:
+- cluster – This is a vector of several integers that denote the cluster which has an allocation of each point.
+- *totss*: This represents the total sum of squares.
+- *centers*: Matrix comprising of several cluster centers
+- *withinss*: This is a vector representing the intra-cluster sum of squares having one component per cluster.
+- *tot.withinss*: This denotes the total intra-cluster sum of squares.
+- *betweenss*: This is the sum of between-cluster squares.
+- *size*: The total number of points that each cluster holds.
+
+# Visualizing the Clustering Results using the First Two Principle Components
+
+```{r principle, echo=TRUE}
+pcclust=prcomp(customer_data[,3:5],scale=FALSE) #principal component analysis
+summary(pcclust)
+pcclust$rotation[,1:2]
+set.seed(1)
+ggplot(customer_data, aes(x =Annual.Income..k.., y = Spending.Score..1.100.)) + 
+  geom_point(stat = "identity", aes(color = as.factor(k6$cluster))) +
+  scale_color_discrete(name=" ",
+              breaks=c("1", "2", "3", "4", "5","6"),
+              labels=c("Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5","Cluster 6")) +
+  ggtitle("Segments of Mall Customers", subtitle = "Using K-means Clustering")
+```
+
+From the above visualization, we observe that there is a distribution of 6 clusters
+Cluster 6 and 4 – These clusters represent the customer_data with the medium income salary as well as the medium annual spend of salary.
+
+- **Cluster 1**: This cluster represents the customer_data having a high annual income as well as a high annual spend.
+
+- **Cluster 3**: This cluster denotes the customer_data with low annual income as well as low yearly spend of income.
+
+- **Cluster 2**: This cluster denotes a high annual income and low yearly spend.
+
+- **Cluster 5**: This cluster represents a low annual income but its high yearly expenditure.
+
+```{r t, echo=TRUE}
+ggplot(customer_data, aes(x =Spending.Score..1.100., y =Age)) + 
+  geom_point(stat = "identity", aes(color = as.factor(k6$cluster))) +
+  scale_color_discrete(name=" ",
+                      breaks=c("1", "2", "3", "4", "5","6"),
+                      labels=c("Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4", "Cluster 5","Cluster 6")) +
+  ggtitle("Segments of Mall Customers", subtitle = "Using K-means Clustering")
+kCols=function(vec){cols=rainbow (length (unique (vec)))
+return (cols[as.numeric(as.factor(vec))])}
+digCluster<-k6$cluster; dignm<-as.character(digCluster); # K-means clusters
+plot(pcclust$x[,1:2], col =kCols(digCluster),pch =19,xlab ="K-means",ylab="classes")
+legend("bottomleft",unique(dignm),fill=unique(kCols(digCluster)))
+
+```
+
+- **Cluster 4 and 1**: These two clusters consist of customers with medium PCA1 and medium PCA2 score.
+
+- **Cluster 6**: This cluster represents customers having a high PCA2 and a low PCA1.
+
+- **Cluster 5**: In this cluster, there are customers with a medium PCA1 and a low PCA2 score.
+
+- **Cluster 3**: This cluster comprises of customers with a high PCA1 income and a high PCA2.
+
+- **Cluster 2**: This comprises of customers with a high PCA2 and a medium annual spend of income.
+
+With the help of clustering, we can understand the variables much better, prompting us to take careful decisions. With the identification of customers, companies can release products and services that target customers based on several parameters like income, age, spending patterns, etc. Furthermore, more complex patterns like product reviews are taken into consideration for better segmentation.
+
+
+**Source of data, code, and literature: https://data-flair.training/blogs/r-data-science-project-customer-segmentation/
